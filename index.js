@@ -1,8 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const UserModel = require("./model/UserSchema");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -32,10 +32,29 @@ app.get("/users", async (req, res) => {
   }
 });
 
+app.get("/profile", (req, res) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ status: false, message: "No token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, "mySecretKey123");
+    res
+      .status(200)
+      .json({ status: true, message: "Token is valid!", data: decoded });
+  } catch (error) {
+    res.status(401).json({ status: false, message: "Invalid token" });
+  }
+});
+
 app.post("/signup", async (req, res) => {
   try {
-    const hashPassword = await bcrypt.hash(req.body.password,10)
-    const newUserData = {...req.body, password:hashPassword}
+    const hashPassword = await bcrypt.hash(req.body.password, 10);
+    const newUserData = { ...req.body, password: hashPassword };
     const addUsers = new UserModel(newUserData);
     await addUsers.save();
     res.status(200).json({
@@ -50,44 +69,40 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-app.post('/login',async(req,res)=>{
+app.post("/login", async (req, res) => {
   try {
-    const user = await UserModel.findOne({email:req.body.email})
-    if(!user){
+    const user = await UserModel.findOne({ email: req.body.email });
+    if (!user) {
       res.status(404).json({
-        status:false,
-        message: 'User Not Found'
-      })
-    }
-    else{
-      const isMatch = await bcrypt.compare(req.body.password,user.password)
-      if(!isMatch){
+        status: false,
+        message: "User Not Found",
+      });
+    } else {
+      const isMatch = await bcrypt.compare(req.body.password, user.password);
+      if (!isMatch) {
         res.status(401).json({
-          status:false,
-          message:"Wrong Password"
-        })
-      }
-      else{
-        const token = jwt.sign(
-          {userId: user._id},
-          'mySecretKey123',
-          {expiresIn:"1h"}
-        )
+          status: false,
+          message: "Wrong Password",
+        });
+      } else {
+        const token = jwt.sign({ userId: user._id }, "mySecretKey123", {
+          expiresIn: "1h",
+        });
 
         res.status(200).json({
-        status:true,
-        message: "User Found",
-        token:token
-      })
+          status: true,
+          message: "User Found",
+          token: token,
+        });
       }
     }
   } catch (error) {
     res.status(500).json({
-      status:false,
-      message:"Internal Server Error"
-    })
+      status: false,
+      message: "Internal Server Error",
+    });
   }
-})
+});
 
 app.listen(5000, () => {
   console.log("Server is running");

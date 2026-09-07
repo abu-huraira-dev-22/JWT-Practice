@@ -1,41 +1,39 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const cors = require("cors");
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const UserModel = require("./model/UserSchema");
 const app = express();
-
 app.use(express.json());
-app.use(cors());
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
+const dotenv = require("dotenv");
+const UserModel = require("./model/UserSchema");
+dotenv.config();
 
-  const user = users.find(
-    (user) => user.username === username && user.password === password,
-  );
+mongoose
+  .connect(process.env.MONGOOSE_URI)
+  .then(() => console.log("MongoDB Connected!"))
+  .catch((err) => console.log("Connection Error:", err));
 
-  if (!user) {
-    return res.status(401).json({
-      status: false,
-      message: "Invalid username or password",
-    });
+app.post('/users',async(req,res)=>{
+  try {
+    const addUsers = new UserModel(req.body)
+    await addUsers.save()
+    const token =jwt.sign({userId: addUsers._id}, 'secret-key',{expiresIn:'1h'})
+    res.json({
+      status:true,
+      message:'User Added Succesfully', 
+      token:token
+    })
+  } catch (error) {
+    res.status(500).json({
+      status:false,
+      message:"Something went wrong",
+      error: error.message
+    })
   }
+})
 
-  const token = jwt.sign(
-    {
-      id: user.id,
-      username: user.username,
-    },
-    SECRET_KEY,
-    {
-      expiresIn: "1h",
-    },
-  );
 
-  res.json({
-    status: true,
-    message: "Login successful",
-    token: token,
-  });
-});
+
+
+app.listen(2000,()=>{
+  console.log('Server is running')
+})

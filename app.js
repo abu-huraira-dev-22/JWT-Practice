@@ -5,6 +5,8 @@ const app = express();
 app.use(express.json());
 const dotenv = require("dotenv");
 const UserModel = require("./model/UserSchema");
+const userRoute = require('./routes/UserRoute');
+const auth = require("./middleware/auth");
 dotenv.config();
 
 mongoose
@@ -12,11 +14,15 @@ mongoose
   .then(() => console.log("MongoDB Connected!"))
   .catch((err) => console.log("Connection Error:", err));
 
+
+app.use('/api/users',userRoute)
+app.use(auth)
+
 app.post('/users',async(req,res)=>{
   try {
     const addUsers = new UserModel(req.body)
     await addUsers.save()
-    const token =jwt.sign({userId: addUsers._id}, 'secret-key',{expiresIn:'1h'})
+    const token =jwt.sign({userId: addUsers._id}, process.env.JWT_SECRET,{expiresIn:'1h'})
     res.json({
       status:true,
       message:'User Added Succesfully', 

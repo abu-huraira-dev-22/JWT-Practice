@@ -17,7 +17,7 @@ mongoose
 
 app.use('/api/users',userRoute)
 app.use(auth)
-
+// app.use('/api/students', )
 app.post('/users',async(req,res)=>{
   try {
     const addUsers = new UserModel(req.body)
